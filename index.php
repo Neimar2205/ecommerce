@@ -8,7 +8,13 @@ $app->config('debug', true);
 
 $app->get('/', function() {
     
-	echo "OK... estamos na index";
+	//echo "OK... estamos na index<br/><br/>";
+
+	$sql = new \Hcode\DB\Sql();
+
+	$results = $sql->select("SELECT * FROM tb_users");
+
+	echo json_encode($results); 
 
 });
 
