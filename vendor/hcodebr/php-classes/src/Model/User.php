@@ -2,13 +2,17 @@
 
 namespace Hcode\Model;
 
+use Exception;
 use \Hcode\DB\Sql;
+use Hcode\Mailer;
 use \Hcode\Model;
 
 
 class User extends Model {
 
     const SESSION = "User";
+    const SECRET  =  "HcodePhp7_Secret";
+    const SECRET_IV = "HcodePhp7_Secret_IV";    
 
     public static function login($login, $password)
     {
@@ -71,17 +75,19 @@ class User extends Model {
     }
 
     public function save(){
-        $sql = new Sql(); 
-           $results = $sql->select("CALL sp_users_save(:desperson,:deslogin,:despassword,:desemail,:nrphone,:inadmin)", array(
+        $sql = new Sql();
+           $results = $sql->select("CALL sp_users_save(:desperson,:deslogin,:despassword,:desemail,:nrphone,:inadmin)",
+            array(
             ":desperson"   =>$this->getdesperson(),
             ":deslogin"    =>$this->getdeslogin(),
-            ":despassword" =>$this->getdespassword(),
+            ":despassword" =>User::getPasswordHash($this->getdespassword()),
             ":desemail"    =>$this->getdesemail(),
             ":nrphone"     =>$this->getnrphone(),
-            ":inadmin"     =>$this->getinadmin(),
-        ));
-
-        $this->setData($results[0]);
+            ":inadmin"     =>$this->getinadmin()      
+            ));
+       
+       $this->setData($results[0]);
+        
     }
 
     public function get($iduser){
@@ -91,7 +97,7 @@ class User extends Model {
           array(":iduser"=>$iduser                                 
         ));
 
-        $this->setData($results[0]);
+       $this->setData($results[0]);
     }
 
     public function update(){
@@ -100,10 +106,10 @@ class User extends Model {
          ":iduser"      =>$this->getiduser(),
          ":desperson"   =>$this->getdesperson(),
          ":deslogin"    =>$this->getdeslogin(),
-         ":despassword" =>$this->getdespassword(),
+         ":despassword" =>User::getPasswordHash($this->getdespassword()),
          ":desemail"    =>$this->getdesemail(),
          ":nrphone"     =>$this->getnrphone(),
-         ":inadmin"     =>$this->getinadmin(),
+         ":inadmin"     =>$this->getinadmin()
      ));
      $this->setData($results[0]);
     }
@@ -111,9 +117,121 @@ class User extends Model {
     public function delete(){
         $sql = new Sql();
 
-        $sql->query("CALL sp_users_delete(:iduser)", array(":iduser"=>$this->getiduser()
+        $sql->query("CALL sp_users_delete(:iduser)",
+         array(
+            ":iduser"=>$this->getiduser()
         ));
     }
+
+    public static function getForgot($email){
+        
+        
+        $sql = new Sql();
+        
+        $results = $sql->select("
+            SELECT *
+            FROM tb_persons a
+            INNER JOIN tb_users b USING(idperson)
+            WHERE a.desemail = :email;",
+            array(
+                ":email" =>$email
+            )
+        );
+        
+        //valida se o email existe
+        if(count($results)=== 0 ){
+            throw new \Exception("Não foi possível recuperar seu acesso.");            
+        }
+        else {
+            $data = $results[0];
+            
+                    // Aqui a procidore cria um novo registro na tb_userspasswordsrecoveries do banco de dados.
+            $results2 = $sql->select("CALL sp_userspasswordsrecoveries_create(:iduser,:desip)",
+                                     array(":iduser"=>$data["iduser"],
+                                           ":desip" =>$_SERVER["REMOTE_ADDR"]
+                                        ));
+
+            // verificar se o registro de recuperação de senha foi criado
+                if(count($results2)=== 0){
+                    throw new \Exception("Não foi possível recuperar seu acesso.");
+                }else
+                    {
+                        $dataRecovery = $results2[0];
+                        
+                        $code = openssl_encrypt($dataRecovery['idrecovery'], 'AES-128-CBC', pack("a16", User::SECRET), 0, pack("a16", User::SECRET_IV));
+                        
+				        $code = base64_encode($code);
+                   
+                        $link = "http://www.hcodecommerce.com.br/admin/forgot/reset?code=$code";
+
+                                           // $toAddress, $toName, $subject, $tplName, $data
+                        $mailer = new Mailer($data["desemail"], $data["desperson"], "Redefinir Senha - Hcode Store", "forgot", array(
+                            "name"=>$data["desperson"],
+                            "link"=>$link,
+                        ));
+                       
+
+                        $mailer->send();
+
+                        return $data;
+
+                    }
+            }
+    }
+
+
+    public static function getPasswordHash($password){
+	    	return password_hash($password, PASSWORD_DEFAULT, [
+	    		'cost'=>12
+	    	]);
+	    }
+
+    public static function validForgotDecrypt($code){
+       
+        $code1 = base64_decode($code);
+
+      $idrecovery =  openssl_decrypt($code1, 'AES-128-CBC', pack("a16", User::SECRET), 0, pack("a16", User::SECRET_IV));
+      
+      $sql = new SQL();
+
+      $results = $sql-> select("SELECT * 
+                                    FROM tb_userspasswordsrecoveries a
+                                    INNER JOIN tb_users b USING(iduser)
+                                    INNER JOIN tb_persons c USING(idperson)
+                                    WHERE idrecovery = :idrecovery
+                                    AND a.dtrecovery IS null
+                                    AND DATE_ADD(a.dtregister, INTERVAL 1 hour) >= NOW();",
+                                    array(
+                                        ":idrecovery" => $idrecovery
+                                    ));
+        
+        if(count($results) === 0){
+            throw new \Exception("Não foi possivel recuperar a senha");
+        }
+        else{
+            return $results[0];
+        }
+    }
+
+    public static function setFogotUsed($idrecovery)
+	{
+        $sql = new Sql();
+		$sql->query("UPDATE tb_userspasswordsrecoveries SET dtrecovery = NOW() WHERE idrecovery = :idrecovery", array(
+			":idrecovery"=>$idrecovery
+		));
+	}
+
+    public function setPassword($password){
+        $sql = new SQL;
+
+        $sql->query("UPDATE tb_users SET despassword = :password WHERE iduser = :iduser",
+                    array(":password" => $password, 
+                            ":iduser" => $this->getiduser()
+                        )
+                    );
+
+    }
+
 
 
 }

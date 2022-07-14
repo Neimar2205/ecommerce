@@ -25,16 +25,13 @@ class Model{
 
     public function setData($data = array()){
 
-        foreach ($data as $key => $value) {
-           
+        foreach ($data as $key => $value) {           
             // No php para se criar nomes dinamicamente é necessário colocar entre {}chaves a concatenação
             $this->{"set".$key}($value);
-
-
-
         }
     }
 
+    // pega e retorna os dados dos objetos
     public function getValues(){
 
         return $this->values;
