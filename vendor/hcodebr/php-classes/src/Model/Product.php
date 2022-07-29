@@ -14,7 +14,7 @@ class Product extends Model{
         exit;
     }
 
-    public function checkList($list){
+    public static function checkList($list){
         foreach ($list as &$row) {
             $p = new Product;
             $p->setData($row);
@@ -110,6 +110,5 @@ class Product extends Model{
         imagedestroy($image);
         $this->checkPhoto();
     }
-
 }
 ?>

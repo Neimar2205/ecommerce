@@ -103,20 +103,6 @@
                     <?php } ?>
 
                     
-                    <!-- <div class="single-product">
-                        <div class="product-f-image">
-                            <img src="/resource/site/img/product-2.jpg" alt="">
-                            <div class="product-hover">
-                                <a href="#" class="add-to-cart-link"><i class="fa fa-shopping-cart"></i> Add to cart</a>
-                                <a href="#" class="view-details-link"><i class="fa fa-link"></i> See details</a>
-                            </div>
-                        </div>                        
-                        <h2>Nokia Lumia 1320</h2>
-                        <div class="product-carousel-price">
-                            <ins>$899.00</ins> <del>$999.00</del>
-                        </div> 
-                    </div> -->
-                   
                 </div>
             </div>
         </div>
