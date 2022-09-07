@@ -51,7 +51,7 @@ class Product extends Model{
     }
 
     public function checkPhoto(){
-        // Dentro do if é verificado o arquivo o diretório da maquina/servidor onde esta rodonado o sistema.
+        // Dentro do if é verificado o arquivo e o diretório da maquina/servidor onde esta rodonado o sistema.
         //Por isso usa-se o DIRECTORY_SEPARATOR.
         if(file_exists($_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . 
         "resource" . DIRECTORY_SEPARATOR . 
