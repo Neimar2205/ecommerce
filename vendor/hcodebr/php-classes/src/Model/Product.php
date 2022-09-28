@@ -10,8 +10,8 @@ class Product extends Model{
     public static function listAll(){
         $sql = new SQL();
         return $sql->select("SELECT * FROM tb_products ORDER BY desproduct");
-        var_dump("product");
-        exit;
+        //var_dump("product");
+        //exit;
     }
 
     public static function checkList($list){
@@ -58,7 +58,7 @@ class Product extends Model{
         "site" . DIRECTORY_SEPARATOR . 
         "img" . DIRECTORY_SEPARATOR . 
         "products" . DIRECTORY_SEPARATOR . $this->getidproduct(). ".jpg")){
-            // Aqui é o caminho usado pelo navegador. Por isso usa-se as barras(/).
+            // Aqui é o caminho usado pelo navegador. Por isso usa-se as barras no sentido padrão(/).
             $url = "/resource/site/img/products/" . $this->getidproduct() . ".jpg";
         }
         else{
@@ -109,6 +109,25 @@ class Product extends Model{
         imagejpeg($image, $dist);
         imagedestroy($image);
         $this->checkPhoto();
+    }
+
+    public function getFromUrl($desurl){
+        $sql = new Sql();
+        $rows =  $sql->select("SELECT * FROM tb_products where desurl = :desurl limit 1" ,
+                                 [':desurl'=>$desurl]);
+        $this->setData($rows[0]);
+    }
+
+    public function getCategories(){
+        $sql = new Sql();
+
+        return $sql->select("SELECT * 
+        FROM tb_categories a 
+        INNER JOIN tb_productscategories b ON b.idcategory = a.idcategory
+        where b.idproduct = :idproduct",
+        [':idproduct'=>$this->getidproduct()]
+    );
+
     }
 }
 ?>

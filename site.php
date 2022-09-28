@@ -1,5 +1,6 @@
 <?php
 
+use Hcode\DB\Sql;
 use \Hcode\Page;
 use \Hcode\Model\Product;
 use \Hcode\Model\Category;
@@ -31,6 +32,16 @@ $app->get("/categories/:idcategory", function($idcategory){
 							]);	
 });
 
-//getProductsPage();
+$app->get("/products/:desurl", function($desurl){
+	
+	$product = new Product();
+	$product->getFromUrl($desurl);
+	$page = new Page();
+	$page->setTPL("product-detail", [
+		'product'     =>$product->getValues(),
+		'categories'  =>$product->getCategories() 
+	]);	
+
+});
 
  ?>
